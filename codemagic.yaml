@@ -7,43 +7,16 @@ workflows:
       java: 17
       node: 20
     scripts:
-      - name: Setup project files
+      - name: Setup and Build Everything
         script: |
-          node -e "
-          const fs = require('fs');
-          fs.writeFileSync('package.json', JSON.stringify({
-            name: 'brainlevel',
-            version: '1.0.0',
-            dependencies: {
-              '@capacitor/android': '6.0.0',
-              '@capacitor/cli': '6.0.0',
-              '@capacitor/core': '6.0.0'
-            }
-          }, null, 2));
-          fs.writeFileSync('capacitor.config.json', JSON.stringify({
-            appId: 'com.brainlevel.game',
-            appName: 'BrainLevel',
-            webDir: 'www'
-          }, null, 2));
-          fs.mkdirSync('www', {recursive: true});
-          ['index.html','game-logic.js','styles.css','levels.json','manifest.json'].forEach(f => {
-            try { fs.copyFileSync(f, 'www/' + f); } catch(e) {}
-          });
-          console.log('Setup done');
-          "
-
-      - name: Install dependencies
-        script: |
+          node -e "const fs=require('fs'); fs.writeFileSync('package.json', JSON.stringify({name:'brainlevel',version:'1.0.0',dependencies:{'@capacitor/android':'6.0.0','@capacitor/cli':'6.0.0','@capacitor/core':'6.0.0'}},null,2)); fs.writeFileSync('capacitor.config.json', JSON.stringify({appId:'com.brainlevel.game',appName:'BrainLevel',webDir:'www'},null,2)); fs.mkdirSync('www',{recursive:true}); ['index.html','game-logic.js','styles.css','levels.json','manifest.json'].forEach(f=>{try{fs.copyFileSync(f,'www/'+f);}catch(e){}}); console.log('files ok');"
           npm install --legacy-peer-deps
           npm install -g @capacitor/cli@6.0.0
-          echo "Install done"
-
-      - name: Add Android and Sync
-        script: |
           rm -rf android
           npx cap add android
           npx cap sync android
-          echo "Sync done"
+          node -e "const fs=require('fs'); const sg=fs.readFileSync('android/settings.gradle','utf8'); if(!sg.includes('capacitor.settings.gradle')){fs.writeFileSync('android/settings.gradle', sg.replace('rootProject.name', \"apply from: '../node_modules/@capacitor/android/capacitor/capacitor.settings.gradle'\nrootProject.name\")); console.log('settings.gradle fixed');} else {console.log('settings.gradle ok');}"
+          node -e "const fs=require('fs'); if(!fs.existsSync('android/capacitor.settings.gradle')){fs.writeFileSync('android/capacitor.settings.gradle', \"include ':capacitor-android'\nproject(':capacitor-android').projectDir = new File('../node_modules/@capacitor/android/capacitor')\n\"); console.log('capacitor.settings.gradle created');} else {console.log('capacitor.settings.gradle exists');}"
 
       - name: Build APK
         script: |

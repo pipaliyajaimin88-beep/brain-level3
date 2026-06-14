@@ -15,14 +15,38 @@ workflows:
           rm -rf android
           npx cap add android
           npx cap sync android
-          node -e "const fs=require('fs'); const sg=fs.readFileSync('android/settings.gradle','utf8'); if(!sg.includes('capacitor.settings.gradle')){fs.writeFileSync('android/settings.gradle', sg.replace('rootProject.name', \"apply from: '../node_modules/@capacitor/android/capacitor/capacitor.settings.gradle'\nrootProject.name\")); console.log('settings.gradle fixed');} else {console.log('settings.gradle ok');}"
-          node -e "const fs=require('fs'); if(!fs.existsSync('android/capacitor.settings.gradle')){fs.writeFileSync('android/capacitor.settings.gradle', \"include ':capacitor-android'\nproject(':capacitor-android').projectDir = new File('../node_modules/@capacitor/android/capacitor')\n\"); console.log('capacitor.settings.gradle created');} else {console.log('capacitor.settings.gradle exists');}"
+          node -e "
+          const fs = require('fs');
+
+          // Fix 1: android/capacitor.settings.gradle
+          const settingsGradle = fs.existsSync('android/capacitor.settings.gradle');
+          if (!settingsGradle) {
+            fs.writeFileSync('android/capacitor.settings.gradle', \"include ':capacitor-android'\nproject(':capacitor-android').projectDir = new File('../node_modules/@capacitor/android/capacitor')\n\");
+            console.log('created capacitor.settings.gradle');
+          }
+
+          // Fix 2: android/app/capacitor.build.gradle
+          const buildGradle = fs.existsSync('android/app/capacitor.build.gradle');
+          if (!buildGradle) {
+            fs.writeFileSync('android/app/capacitor.build.gradle', \"// Capacitor build gradle\ndependencies {\n}\n\");
+            console.log('created capacitor.build.gradle');
+          }
+
+          // Fix 3: android/variables.gradle
+          const varsGradle = fs.existsSync('android/variables.gradle');
+          if (!varsGradle) {
+            fs.writeFileSync('android/variables.gradle', \"ext {\n  minSdkVersion = 22\n  compileSdkVersion = 34\n  targetSdkVersion = 34\n  androidxActivityVersion = '1.8.0'\n  androidxAppCompatVersion = '1.6.1'\n  androidxCoordinatorLayoutVersion = '1.2.0'\n  androidxCoreVersion = '1.12.0'\n  androidxFragmentVersion = '1.6.2'\n  junitVersion = '4.13.2'\n  androidxJunitVersion = '1.1.5'\n  androidxEspressoCoreVersion = '3.5.1'\n  cordovaAndroidVersion = '10.1.1'\n}\n\");
+            console.log('created variables.gradle');
+          }
+
+          console.log('All gradle files fixed');
+          "
 
       - name: Build APK
         script: |
           cd android
           chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon
+          ./gradlew assembleDebug --no-daemon --stacktrace
 
     artifacts:
       - android/app/build/outputs/apk/debug/app-debug.apk

@@ -9,15 +9,28 @@ workflows:
     scripts:
       - name: Setup project files
         script: |
-          echo '{"name":"brainlevel","version":"1.0.0","dependencies":{"@capacitor/android":"6.0.0","@capacitor/cli":"6.0.0","@capacitor/core":"6.0.0"}}' > package.json
-          echo '{"appId":"com.brainlevel.game","appName":"BrainLevel","webDir":"www"}' > capacitor.config.json
-          mkdir -p www
-          cp index.html www/ || true
-          cp game-logic.js www/ || true
-          cp styles.css www/ || true
-          cp levels.json www/ || true
-          cp manifest.json www/ || true
-          echo "Setup done"
+          node -e "
+          const fs = require('fs');
+          fs.writeFileSync('package.json', JSON.stringify({
+            name: 'brainlevel',
+            version: '1.0.0',
+            dependencies: {
+              '@capacitor/android': '6.0.0',
+              '@capacitor/cli': '6.0.0',
+              '@capacitor/core': '6.0.0'
+            }
+          }, null, 2));
+          fs.writeFileSync('capacitor.config.json', JSON.stringify({
+            appId: 'com.brainlevel.game',
+            appName: 'BrainLevel',
+            webDir: 'www'
+          }, null, 2));
+          fs.mkdirSync('www', {recursive: true});
+          ['index.html','game-logic.js','styles.css','levels.json','manifest.json'].forEach(f => {
+            try { fs.copyFileSync(f, 'www/' + f); } catch(e) {}
+          });
+          console.log('Setup done');
+          "
 
       - name: Install dependencies
         script: |

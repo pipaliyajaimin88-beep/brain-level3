@@ -7,22 +7,34 @@ workflows:
       java: 17
       node: 20
     scripts:
+      - name: Setup project files
+        script: |
+          set -e
+          echo '{"name":"brainlevel","version":"1.0.0","dependencies":{"@capacitor/android":"6.0.0","@capacitor/cli":"6.0.0","@capacitor/core":"6.0.0"}}' > package.json
+          echo '{"appId":"com.brainlevel.game","appName":"BrainLevel","webDir":"www"}' > capacitor.config.json
+          mkdir -p www
+          [ -f index.html ] && cp index.html www/
+          [ -f game-logic.js ] && cp game-logic.js www/
+          [ -f styles.css ] && cp styles.css www/
+          [ -f levels.json ] && cp levels.json www/
+          [ -f manifest.json ] && cp manifest.json www/
+
       - name: Install dependencies
         script: |
+          set -e
           npm install --legacy-peer-deps
-          npm install -g @capacitor/cli
+          npm install -g @capacitor/cli@6.0.0
 
-      - name: Add Android platform and Sync
+      - name: Add Android and Sync
         script: |
-          # Remove broken android folder if exists
+          set -e
           rm -rf android
-          # Add android fresh
           npx cap add android
-          # Copy web files
           npx cap sync android
 
       - name: Build APK
         script: |
+          set -e
           cd android
           chmod +x gradlew
           ./gradlew assembleDebug --no-daemon

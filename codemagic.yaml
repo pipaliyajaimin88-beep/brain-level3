@@ -12,8 +12,13 @@ workflows:
           npm install --legacy-peer-deps
           npm install -g @capacitor/cli
 
-      - name: Sync Capacitor
+      - name: Add Android platform and Sync
         script: |
+          # Remove broken android folder if exists
+          rm -rf android
+          # Add android fresh
+          npx cap add android
+          # Copy web files
           npx cap sync android
 
       - name: Build APK

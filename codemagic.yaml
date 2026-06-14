@@ -1,22 +1,57 @@
 workflows:
   android-build:
-    name: BrainLevel Android APK
-    max_build_duration: 60
-    instance_type: mac_mini_m1
+    artifacts:
+    - android/app/build/outputs/apk/debug/app-debug.apk
     environment:
       java: 17
       node: 20
+    instance_type: mac_mini_m1
+    max_build_duration: 60
+    name: BrainLevel Android APK
     scripts:
-      - name: Setup Project
-        script: |
-          chmod +x setup.sh
-          bash setup.sh
+    - name: Setup Project
+      script: 'cat > package.json << ENDJSON
 
-      - name: Build APK
-        script: |
-          cd android
-          chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon --max-workers 2
+        {"name":"brainlevel","version":"1.0.0","dependencies":{"@capacitor/android":"5.7.4","@capacitor/cli":"5.7.4","@capacitor/core":"5.7.4"}}
 
-    artifacts:
-      - android/app/build/outputs/apk/debug/app-debug.apk
+        ENDJSON
+
+        cat > capacitor.config.json << ENDJSON
+
+        {"appId":"com.brainlevel.game","appName":"BrainLevel","webDir":"www"}
+
+        ENDJSON
+
+        mkdir -p www
+
+        for f in index.html game-logic.js styles.css levels.json manifest.json; do
+        [ -f "$f" ] && cp "$f" www/; done
+
+        npm install --legacy-peer-deps
+
+        npm install -g @capacitor/cli@5.7.4
+
+        rm -rf android
+
+        npx cap add android
+
+        npx cap sync android
+
+        SRC=node_modules/@capacitor/android/capacitor
+
+        [ ! -f android/capacitor.settings.gradle ] && cp $SRC/capacitor.settings.gradle
+        android/ || true
+
+        [ ! -f android/app/capacitor.build.gradle ] && cp $SRC/capacitor.build.gradle
+        android/app/ || true
+
+        printf "org.gradle.jvmargs=-Xmx1536m\norg.gradle.daemon=false\nandroid.useAndroidX=true\nandroid.enableJetifier=true\n"
+        > android/gradle.properties
+
+        echo SETUP COMPLETE'
+    - name: Build APK
+      script: 'cd android
+
+        chmod +x gradlew
+
+        ./gradlew assembleDebug --no-daemon --max-workers 2'

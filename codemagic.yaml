@@ -13,11 +13,13 @@ workflows:
         script: npm install -g @capacitor/cli@5.7.4
       - name: Sync www to android
         script: npx cap sync android
-      - name: Fix gradle wrapper version
+      - name: Force Java 17 everywhere
         script: |
           cd android
-          sed -i.bak 's/gradle-[0-9.]*-all.zip/gradle-8.4-all.zip/' gradle/wrapper/gradle-wrapper.properties
-          cat gradle/wrapper/gradle-wrapper.properties
+          find . -name "build.gradle" -exec sed -i.bak 's/JavaVersion.VERSION_21/JavaVersion.VERSION_17/g' {} \;
+          find . -name "build.gradle" -exec sed -i.bak 's/JavaVersion.VERSION_2[0-9]/JavaVersion.VERSION_17/g' {} \;
+          echo "org.gradle.java.home=$JAVA_HOME" >> gradle.properties
+          cat gradle.properties
       - name: Build APK
         script: |
           cd android

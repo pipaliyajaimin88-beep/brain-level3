@@ -13,17 +13,22 @@ workflows:
         script: npm install -g @capacitor/cli@5.7.4
       - name: Sync www to android
         script: npx cap sync android
-      - name: Force Java 17 everywhere
+      - name: Show capacitor-android build.gradle
+        script: |
+          cat node_modules/@capacitor/android/capacitor/build.gradle | grep -A2 -i "sourceCompat\|targetCompat\|JavaVersion" || echo "not found"
+      - name: Force Java 17 in all build files
         script: |
           cd android
-          find . -name "build.gradle" -exec sed -i.bak 's/JavaVersion.VERSION_21/JavaVersion.VERSION_17/g' {} \;
-          find . -name "build.gradle" -exec sed -i.bak 's/JavaVersion.VERSION_2[0-9]/JavaVersion.VERSION_17/g' {} \;
-          echo "org.gradle.java.home=$JAVA_HOME" >> gradle.properties
-          cat gradle.properties
+          find . -name "*.gradle" -exec grep -l "VERSION_21\|VERSION_2[0-9]" {} \; > /tmp/files_to_fix.txt || true
+          cat /tmp/files_to_fix.txt
+          while IFS= read -r f; do
+            sed -i.bak -E 's/JavaVersion\.VERSION_2[0-9]/JavaVersion.VERSION_17/g' "$f"
+            echo "Fixed: $f"
+          done < /tmp/files_to_fix.txt
       - name: Build APK
         script: |
           cd android
           chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon --max-workers 2
+          ./gradlew assembleDebug --no-daemon --max-workers 2 -Dorg.gradle.java.home="$JAVA_HOME"
     artifacts:
       - android/app/build/outputs/apk/debug/app-debug.apk

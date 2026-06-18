@@ -7,26 +7,15 @@ workflows:
       java: 17
       node: 22
     scripts:
-      - name: Install dependencies
-        script: npm install --legacy-peer-deps
+      - name: Clean install dependencies
+        script: |
+          rm -f package-lock.json
+          rm -rf node_modules
+          npm install --legacy-peer-deps
       - name: Install Capacitor CLI
         script: npm install -g @capacitor/cli@5.7.4
       - name: Sync www to android
         script: npx cap sync android
-      - name: Force Java 17 via root build.gradle hook
-        script: |
-          cd android
-          cat >> build.gradle << 'GRADLEEOF'
-
-          allprojects {
-            tasks.withType(JavaCompile).configureEach {
-              sourceCompatibility = "17"
-              targetCompatibility = "17"
-            }
-          }
-          GRADLEEOF
-          echo "----- root build.gradle tail -----"
-          tail -15 build.gradle
       - name: Build APK
         script: |
           cd android
